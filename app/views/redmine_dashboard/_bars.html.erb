@@ -1,0 +1,31 @@
+<section class="dash-panel">
+  <h3><%= l("redmine_dashboard_by_#{section[:key]}") %></h3>
+  <div class="dash-rows">
+  <% section[:rows].each do |row| %>
+    <% width = section[:max].to_i.zero? ? 0 : (row[:count] * 100.0 / section[:max]).round %>
+    <% percent = total.to_i.zero? ? 0 : (row[:count] * 100.0 / total).round %>
+    <% label = if row[:more]
+                  l(:redmine_dashboard_more, :number => row[:more])
+                elsif row[:blank]
+                  l(section[:key] == :version ? :redmine_dashboard_no_version : :redmine_dashboard_unassigned)
+                else
+                  row[:label].to_s
+                end %>
+    <div class="dash-row">
+      <div class="dash-who">
+        <% if row[:record].is_a?(User) && respond_to?(:avatar) %>
+          <%= avatar(row[:record], :size => 22) %>
+        <% end %>
+        <span class="dash-label<%= ' is-muted' if row[:blank] %>" title="<%= label %>"><%= label %></span>
+      </div>
+      <div class="dash-track" aria-hidden="true">
+        <span class="dash-fill is-<%= section[:key] %>" style="width: <%= width %>%;"></span>
+      </div>
+      <div class="dash-num">
+        <%= number_with_delimiter(row[:count]) %>
+        <small><%= percent %>%</small>
+      </div>
+    </div>
+  <% end %>
+  </div>
+</section>

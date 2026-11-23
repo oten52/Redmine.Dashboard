@@ -1,0 +1,26 @@
+en:
+  redmine_dashboard_menu: Dashboard
+  redmine_dashboard_intro: "Pick a saved query. Priority, assignee and the other counts are calculated from its current result."
+  redmine_dashboard_query: Query
+  redmine_dashboard_choose: Select a query
+  redmine_dashboard_show: Show
+  redmine_dashboard_global: All projects
+  redmine_dashboard_pick: Select a query to build the dashboard.
+  redmine_dashboard_no_queries: There is no saved issue query you can use.
+  redmine_dashboard_missing_query: That query is not available.
+  redmine_dashboard_query_failed: The query could not be calculated.
+  redmine_dashboard_open_list: Open the issue list
+  redmine_dashboard_total: Total
+  redmine_dashboard_open: Open
+  redmine_dashboard_closed: Closed
+  redmine_dashboard_unassigned: Unassigned
+  redmine_dashboard_no_issues: This query has no issues.
+  redmine_dashboard_no_version: No version
+  redmine_dashboard_more: "Others (%{number})"
+  redmine_dashboard_by_priority: Priority
+  redmine_dashboard_by_assignee: Assignee
+  redmine_dashboard_by_status: Status
+  redmine_dashboard_by_tracker: Tracker
+  redmine_dashboard_by_version: Version
+  redmine_dashboard_by_author: Author
+  redmine_dashboard_by_project: Project

@@ -1,0 +1,128 @@
+<% html_title l(:redmine_dashboard_menu) %>
+
+<style>
+  .dash-intro { color: #5c6778; margin: 0 0 14px; }
+  .dash-picker { padding: 14px 16px; margin-bottom: 16px; }
+  .dash-picker-row { display: flex; flex-wrap: wrap; align-items: flex-end; }
+  .dash-picker label { display: block; font-size: 12px; color: #5c6778; margin-right: 12px; }
+  .dash-picker select { min-width: 280px; margin-top: 4px; display: block; }
+  .dash-picker .dash-submit { margin: 0 0 1px 0; }
+  .dash-query-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin: 0 0 14px; }
+  .dash-query-head h3 { margin: 0 0 4px; }
+  .dash-meta { color: #6b7280; font-size: 12px; }
+  .dash-kpis { display: flex; flex-wrap: wrap; margin: 0 -6px 16px; }
+  .dash-kpi { flex: 1 1 160px; margin: 0 6px 12px; background: #fff; border: 1px solid #e6e9ef; border-left: 3px solid #2f6fed; border-radius: 10px; padding: 14px 16px; }
+  .dash-kpi span { display: block; font-size: 12px; letter-spacing: .04em; text-transform: uppercase; color: #6b7280; }
+  .dash-kpi strong { display: block; margin-top: 6px; font-size: 28px; line-height: 1.1; color: #1c2430; font-weight: 600; }
+  .dash-kpi a { text-decoration: none; }
+  .dash-grid { display: flex; flex-wrap: wrap; margin: 0 -8px; }
+  .dash-panel { flex: 1 1 360px; margin: 0 8px 16px; background: #fff; border: 1px solid #e6e9ef; border-radius: 10px; padding: 14px 16px 8px; }
+  .dash-panel h3 { margin: 0 0 12px; font-size: 15px; }
+  .dash-rows { max-height: 440px; overflow-y: auto; }
+  .dash-row { display: flex; align-items: center; margin-bottom: 10px; }
+  .dash-who { width: 42%; min-width: 120px; display: flex; align-items: center; gap: 8px; }
+  .dash-who img { border-radius: 50%; }
+  .dash-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .dash-label.is-muted { color: #6b7280; }
+  .dash-track { flex: 1; height: 8px; background: #eef1f6; border-radius: 99px; margin: 0 10px; overflow: hidden; }
+  .dash-fill { display: block; height: 8px; background: #2f6fed; border-radius: 99px; }
+  .dash-fill.is-assignee { background: #0f9f8f; }
+  .dash-fill.is-status { background: #7c6cf0; }
+  .dash-fill.is-tracker { background: #e08a1e; }
+  .dash-fill.is-version { background: #3d8bfd; }
+  .dash-fill.is-author { background: #5b6b7c; }
+  .dash-fill.is-project { background: #d4537e; }
+  .dash-num { width: 88px; text-align: right; font-variant-numeric: tabular-nums; color: #1c2430; }
+  .dash-num small { color: #6b7280; font-weight: normal; }
+  .dash-empty { color: #6b7280; padding: 8px 0 16px; }
+</style>
+
+<h2><%= l(:redmine_dashboard_menu) %></h2>
+<p class="dash-intro"><%= l(:redmine_dashboard_intro) %></p>
+
+<div class="box dash-picker">
+  <% form_options = {:controller => 'redmine_dashboard', :action => 'show'} %>
+  <% form_options[:project_id] = @project if @project %>
+  <%= form_tag(form_options, :method => :get, :id => 'dash-query-form') do %>
+    <div class="dash-picker-row">
+      <label for="dashboard_query_id"><%= l(:redmine_dashboard_query) %>
+        <%= select_tag :query_id,
+              grouped_options_for_select(dashboard_query_groups, @query && @query.id),
+              :include_blank => l(:redmine_dashboard_choose),
+              :id => 'dashboard_query_id' %>
+      </label>
+      <p class="dash-submit"><%= submit_tag l(:redmine_dashboard_show) %></p>
+    </div>
+  <% end %>
+</div>
+
+<% if @queries_error %>
+  <p class="flash error"><%= l(:redmine_dashboard_query_failed) %></p>
+<% elsif @queries.empty? %>
+  <p class="dash-empty"><%= l(:redmine_dashboard_no_queries) %></p>
+<% elsif @missing_query %>
+  <p class="flash error"><%= l(:redmine_dashboard_missing_query) %></p>
+<% elsif @query && !@query.valid? %>
+  <p class="flash error"><%= @query.errors.full_messages.join(', ') %></p>
+<% elsif @query && @report %>
+  <% if @report.error %>
+    <p class="flash error"><%= l(@report.error) %></p>
+  <% else %>
+    <div class="dash-query-head">
+      <div>
+        <h3><%= @query.name %></h3>
+        <% if @query.description.present? %>
+          <p class="dash-meta"><%= @query.description %></p>
+        <% end %>
+        <p class="dash-meta">
+          <%= @query.project ? @query.project.name : l(:redmine_dashboard_global) %>
+          <% if @report.latest_update %>
+            · <%= format_time(@report.latest_update) %>
+          <% end %>
+        </p>
+      </div>
+      <p><%= link_to l(:redmine_dashboard_open_list), dashboard_issue_path %></p>
+    </div>
+
+    <div class="dash-kpis">
+      <div class="dash-kpi">
+        <span><%= l(:redmine_dashboard_total) %></span>
+        <strong><%= link_to number_with_delimiter(@report.total), dashboard_issue_path %></strong>
+      </div>
+      <div class="dash-kpi">
+        <span><%= l(:redmine_dashboard_open) %></span>
+        <strong><%= number_with_delimiter(@report.open_count) %></strong>
+      </div>
+      <div class="dash-kpi">
+        <span><%= l(:redmine_dashboard_closed) %></span>
+        <strong><%= number_with_delimiter(@report.closed_count) %></strong>
+      </div>
+      <div class="dash-kpi">
+        <span><%= l(:redmine_dashboard_unassigned) %></span>
+        <strong><%= number_with_delimiter(@report.unassigned_count) %></strong>
+      </div>
+    </div>
+
+    <% if @report.total.zero? %>
+      <p class="dash-empty"><%= l(:redmine_dashboard_no_issues) %></p>
+    <% else %>
+      <div class="dash-grid">
+        <% @report.sections.each do |section| %>
+          <%= render :partial => 'bars', :locals => {:section => section, :total => @report.total} %>
+        <% end %>
+      </div>
+    <% end %>
+  <% end %>
+<% else %>
+  <p class="dash-empty"><%= l(:redmine_dashboard_pick) %></p>
+<% end %>
+
+<%= javascript_tag do %>
+  (function() {
+    var form = document.getElementById('dash-query-form');
+    if (!form) { return; }
+    var select = document.getElementById('dashboard_query_id');
+    if (!select) { return; }
+    select.addEventListener('change', function() { form.submit(); });
+  })();
+<% end %>

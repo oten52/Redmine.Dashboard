@@ -1,0 +1,26 @@
+tr:
+  redmine_dashboard_menu: Pano
+  redmine_dashboard_intro: "Kayıtlı bir sorgu seçin. Öncelik, atanan ve diğer sayılar sorgunun güncel sonucundan hesaplanır."
+  redmine_dashboard_query: Sorgu
+  redmine_dashboard_choose: Sorgu seçin
+  redmine_dashboard_show: Göster
+  redmine_dashboard_global: Tüm projeler
+  redmine_dashboard_pick: Panoyu oluşturmak için bir sorgu seçin.
+  redmine_dashboard_no_queries: Kullanabileceğiniz kayıtlı bir iş sorgusu yok.
+  redmine_dashboard_missing_query: Bu sorguya erişilemiyor.
+  redmine_dashboard_query_failed: Sorgu hesaplanamadı.
+  redmine_dashboard_open_list: İş listesini aç
+  redmine_dashboard_total: Toplam
+  redmine_dashboard_open: Açık
+  redmine_dashboard_closed: Kapalı
+  redmine_dashboard_unassigned: Atanmamış
+  redmine_dashboard_no_issues: Bu sorguda iş yok.
+  redmine_dashboard_no_version: Sürümsüz
+  redmine_dashboard_more: "Diğer (%{number})"
+  redmine_dashboard_by_priority: Öncelik
+  redmine_dashboard_by_assignee: Atanan
+  redmine_dashboard_by_status: Durum
+  redmine_dashboard_by_tracker: İş tipi
+  redmine_dashboard_by_version: Sürüm
+  redmine_dashboard_by_author: Yazar
+  redmine_dashboard_by_project: Proje

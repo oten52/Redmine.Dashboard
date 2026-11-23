@@ -1,0 +1,6 @@
+# Changelog
+
+## 0.1.0
+
+* Add a dashboard that turns a saved issue query into live counts.
+* Show priority, assignee, status, tracker, version, author and project distributions.
