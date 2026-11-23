@@ -26,12 +26,15 @@
   .dash-label.is-muted { color: #6b7280; }
   .dash-track { flex: 1; height: 8px; background: #eef1f6; border-radius: 99px; margin: 0 10px; overflow: hidden; }
   .dash-fill { display: block; height: 8px; background: #2f6fed; border-radius: 99px; }
-  .dash-fill.is-assignee { background: #0f9f8f; }
-  .dash-fill.is-status { background: #7c6cf0; }
-  .dash-fill.is-tracker { background: #e08a1e; }
-  .dash-fill.is-version { background: #3d8bfd; }
-  .dash-fill.is-author { background: #5b6b7c; }
-  .dash-fill.is-project { background: #d4537e; }
+  .dash-fill.is-tone-0 { background: #2f6fed; }
+  .dash-fill.is-tone-1 { background: #0f9f8f; }
+  .dash-fill.is-tone-2 { background: #7c6cf0; }
+  .dash-fill.is-tone-3 { background: #e08a1e; }
+  .dash-fill.is-tone-4 { background: #3d8bfd; }
+  .dash-fill.is-tone-5 { background: #5b6b7c; }
+  .dash-fill.is-tone-6 { background: #d4537e; }
+  .dash-columns { display: flex; flex-wrap: wrap; max-height: 168px; overflow: auto; margin-top: 8px; padding: 8px 10px; border: 1px solid #e6e9ef; border-radius: 8px; background: #fff; }
+  .dash-columns label { display: block; margin: 0 16px 6px 0; font-size: 13px; font-weight: normal; color: #1c2430; }
   .dash-num { width: 88px; text-align: right; font-variant-numeric: tabular-nums; color: #1c2430; }
   .dash-num small { color: #6b7280; font-weight: normal; }
   .dash-empty { color: #6b7280; padding: 8px 0 16px; }
@@ -51,8 +54,21 @@
               :include_blank => l(:redmine_dashboard_choose),
               :id => 'dashboard_query_id' %>
       </label>
-      <p class="dash-submit"><%= submit_tag l(:redmine_dashboard_show) %></p>
     </div>
+    <% if @report && !@report.error && @report.available_columns.any? %>
+      <%= hidden_field_tag :columns_set, '1', :id => 'dashboard_columns_set' %>
+      <p class="dash-meta"><%= l(:redmine_dashboard_columns) %></p>
+      <div class="dash-columns">
+        <% @report.available_columns.each_with_index do |column, index| %>
+          <label for="dashboard_column_<%= index %>">
+            <%= check_box_tag 'columns[]', column.name, @report.selected_names.include?(column.name.to_s), :id => "dashboard_column_#{index}" %>
+            <%= @report.caption_for(column) %>
+          </label>
+        <% end %>
+      </div>
+      <p class="dash-meta"><%= l(:redmine_dashboard_columns_help) %></p>
+    <% end %>
+    <p class="dash-submit"><%= submit_tag l(:redmine_dashboard_show) %></p>
   <% end %>
 </div>
 
@@ -105,10 +121,18 @@
 
     <% if @report.total.zero? %>
       <p class="dash-empty"><%= l(:redmine_dashboard_no_issues) %></p>
+    <% elsif @report.column_error %>
+      <p class="flash error"><%= l(@report.column_error) %></p>
+    <% elsif @report.selected_columns.empty? %>
+      <p class="dash-empty"><%= l(:redmine_dashboard_no_columns) %></p>
     <% else %>
+      <% if @report.sampled %>
+        <p class="dash-meta"><%= l(:redmine_dashboard_sampled, :number => number_with_delimiter(2000)) %></p>
+      <% end %>
       <div class="dash-grid">
         <% @report.sections.each do |section| %>
-          <%= render :partial => 'bars', :locals => {:section => section, :total => @report.total} %>
+          <% base = section[:rows].inject(0) {|sum, row| sum + row[:count].to_i} %>
+          <%= render :partial => 'bars', :locals => {:section => section, :total => base} %>
         <% end %>
       </div>
     <% end %>
@@ -123,6 +147,12 @@
     if (!form) { return; }
     var select = document.getElementById('dashboard_query_id');
     if (!select) { return; }
-    select.addEventListener('change', function() { form.submit(); });
+    select.addEventListener('change', function() {
+      var flag = document.getElementById('dashboard_columns_set');
+      if (flag && flag.parentNode) { flag.parentNode.removeChild(flag); }
+      var boxes = form.querySelectorAll('input[name="columns[]"]');
+      for (var i = 0; i < boxes.length; i++) { boxes[i].disabled = true; }
+      form.submit();
+    });
   })();
 <% end %>

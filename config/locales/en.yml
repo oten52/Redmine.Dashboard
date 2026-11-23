@@ -1,6 +1,6 @@
 en:
   redmine_dashboard_menu: Dashboard
-  redmine_dashboard_intro: "Pick a saved query. Priority, assignee and the other counts are calculated from its current result."
+  redmine_dashboard_intro: "Pick a saved query, then choose its columns to see each value's share of the result."
   redmine_dashboard_query: Query
   redmine_dashboard_choose: Select a query
   redmine_dashboard_show: Show
@@ -24,3 +24,9 @@ en:
   redmine_dashboard_by_version: Version
   redmine_dashboard_by_author: Author
   redmine_dashboard_by_project: Project
+  redmine_dashboard_columns: Columns
+  redmine_dashboard_columns_help: "Choose columns from this query, such as criticality, status or related issue status. At most 10 columns are calculated."
+  redmine_dashboard_no_columns: Select at least one column to see a distribution.
+  redmine_dashboard_empty_value: Empty
+  redmine_dashboard_columns_failed: The column distribution could not be calculated.
+  redmine_dashboard_sampled: "Shares are based on the %{number} most recently updated issues."

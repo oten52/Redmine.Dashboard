@@ -1,5 +1,5 @@
 <section class="dash-panel">
-  <h3><%= l("redmine_dashboard_by_#{section[:key]}") %></h3>
+  <h3><%= section[:title] %></h3>
   <div class="dash-rows">
   <% section[:rows].each do |row| %>
     <% width = section[:max].to_i.zero? ? 0 : (row[:count] * 100.0 / section[:max]).round %>
@@ -7,7 +7,7 @@
     <% label = if row[:more]
                   l(:redmine_dashboard_more, :number => row[:more])
                 elsif row[:blank]
-                  l(section[:key] == :version ? :redmine_dashboard_no_version : :redmine_dashboard_unassigned)
+                  l(section[:blank_label] || :redmine_dashboard_empty_value)
                 else
                   row[:label].to_s
                 end %>
@@ -19,7 +19,7 @@
         <span class="dash-label<%= ' is-muted' if row[:blank] %>" title="<%= label %>"><%= label %></span>
       </div>
       <div class="dash-track" aria-hidden="true">
-        <span class="dash-fill is-<%= section[:key] %>" style="width: <%= width %>%;"></span>
+        <span class="dash-fill is-tone-<%= section[:tone] %>" style="width: <%= width %>%;"></span>
       </div>
       <div class="dash-num">
         <%= number_with_delimiter(row[:count]) %>

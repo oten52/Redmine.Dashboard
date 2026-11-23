@@ -12,7 +12,7 @@ class RedmineDashboardController < ApplicationController
 
     @query.project = @project if @project
     if @query.valid?
-      @report = RedmineDashboard::Report.new(@query)
+      @report = RedmineDashboard::Report.new(@query, column_names_for(@query))
       @report.load
     end
   end
@@ -83,6 +83,21 @@ class RedmineDashboardController < ApplicationController
 
   def session_key
     @project ? "redmine_dashboard_query_#{@project.id}" : 'redmine_dashboard_query'
+  end
+
+  def column_names_for(query)
+    key = "redmine_dashboard_cols_#{query.id}"
+    if params[:columns_set].present?
+      names = sanitize_column_names(params[:columns])
+      session[key] = names.join(',')
+      names
+    elsif session[key].is_a?(String)
+      sanitize_column_names(session[key].split(','))
+    end
+  end
+
+  def sanitize_column_names(value)
+    Array(value).map(&:to_s).select {|name| name.match?(/\A[a-zA-Z0-9_.]+\z/)}.uniq.first(10)
   end
 
   def dashboard_query_groups

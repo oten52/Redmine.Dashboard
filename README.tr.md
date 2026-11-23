@@ -6,13 +6,14 @@ Kayıtlı bir iş sorgusunun güncel sonucundan istatistik panosu oluşturur.
 
 ## Yenilikler
 
-* 0.1.0: İlk sürüm. Ayrıntılar [CHANGELOG](CHANGELOG.md) dosyasında.
+* 0.2.0: Sorgudaki sütunlara göre oransal dağılım. Ayrıntılar [CHANGELOG](CHANGELOG.md) dosyasında.
 
 ## Ne yapar
 
 * Kayıtlı iş sorgularından birini seçersiniz. Sayılar o sorgunun süzgeçlerine uyar ve işler değiştikçe güncellenir.
 * Özet kartlarda toplam, açık, kapalı ve atanmamış sayıları durur.
-* Panolarda öncelik, atanan, durum, iş tipi, sürüm, yazar ve birden fazla proje varsa proje dağılımı gösterilir. Örnek: P1 12, Furkan 15.
+* Sorguda bulunan sütunlardan istediklerinizi seçersiniz. Kritik seviye, durum, ilişkili iş durumu ve diğer özel alanlar bu listede yer alır.
+* Seçilen her sütun için değerlerin adedi ve toplam içindeki oranı gösterilir. Örnek: Kritik 12, %40.
 * Her satırda çubuk, adet ve toplam içindeki pay vardır.
 * Sayfa üst menüde ve proje sekmesinde açılır. Proje içinde genel bir sorgu o projeyle sınırlanır.
 

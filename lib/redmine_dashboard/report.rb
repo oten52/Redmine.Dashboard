@@ -2,10 +2,20 @@
 
 module RedmineDashboard
   class Report
-    attr_reader :total, :open_count, :closed_count, :unassigned_count, :latest_update, :sections, :error
+    include Redmine::I18n
 
-    def initialize(query)
+    SAMPLE_LIMIT = 2000
+    COLUMN_LIMIT = 10
+    ROW_LIMIT = 30
+    SKIPPED_COLUMNS = %w[id subject description last_notes attachments relations parent].freeze
+    DEFAULT_COLUMNS = %w[status priority tracker assigned_to author category fixed_version project].freeze
+
+    attr_reader :total, :open_count, :closed_count, :unassigned_count, :latest_update,
+                :sections, :error, :column_error, :sampled
+
+    def initialize(query, column_names = nil)
       @query = query
+      @column_names = column_names
       @total = 0
       @open_count = 0
       @closed_count = 0
@@ -13,6 +23,8 @@ module RedmineDashboard
       @latest_update = nil
       @sections = []
       @error = nil
+      @column_error = nil
+      @sampled = false
     end
 
     def load
@@ -21,16 +33,55 @@ module RedmineDashboard
 
       @closed_count = closed_rows.to_i
       @open_count = [@total - @closed_count, 0].max
-      assignee_rows = grouped("#{Issue.table_name}.assigned_to_id")
-      @unassigned_count = assignee_rows[nil].to_i
+      @unassigned_count = grouped("#{Issue.table_name}.assigned_to_id")[nil].to_i
       return self if @error
 
       @latest_update = latest_timestamp
-      @sections = build_sections(assignee_rows)
+      @sections = build_sections
       self
     end
 
+    def available_columns
+      @available_columns ||= begin
+        columns = @query.respond_to?(:columns) ? @query.columns : []
+        columns.reject {|column| SKIPPED_COLUMNS.include?(column.name.to_s)}
+      rescue StandardError
+        []
+      end
+    end
+
+    def selected_columns
+      @selected_columns ||= begin
+        by_name = available_columns.index_by {|column| column.name.to_s}
+        names = @column_names.nil? ? default_names : Array(@column_names)
+        names.map {|name| by_name[name.to_s]}.compact.first(COLUMN_LIMIT)
+      end
+    end
+
+    def selected_names
+      selected_columns.map {|column| column.name.to_s}
+    end
+
+    def caption_for(column)
+      column_title(column)
+    end
+
     private
+
+    def default_names
+      preferred = available_columns.select {|column| preferred_column?(column)}
+      preferred = available_columns if preferred.empty?
+      preferred.map {|column| column.name.to_s}.first(COLUMN_LIMIT)
+    end
+
+    def preferred_column?(column)
+      name = column.name.to_s
+      return false if %w[updated_on created_on closed_on start_date due_date done_ratio estimated_hours].include?(name)
+      return true if name.start_with?('cf_', 'relc_', 'rel_')
+      return true if DEFAULT_COLUMNS.include?(name)
+
+      column.respond_to?(:groupable?) && column.groupable?
+    end
 
     def relation
       @relation ||= begin
@@ -81,81 +132,146 @@ module RedmineDashboard
       nil
     end
 
-    def build_sections(assignee_rows)
-      return [] if @error || @total.zero?
+    def build_sections
+      columns = selected_columns
+      return [] if columns.empty? || @error
 
-      list = []
-      list << dimension(:priority, :priority_id, IssuePriority, :position)
-      list << people(:assignee, assignee_rows, Principal)
-      list << dimension(:status, :status_id, IssueStatus, :position)
-      list << dimension(:tracker, :tracker_id, Tracker, :position)
-      list << dimension(:version, :fixed_version_id, Version, :count, :require_value => true)
-      list << people(:author, grouped("#{Issue.table_name}.author_id"), User)
-      list << projects
-      list.compact
+      issues = sample_issues
+      return [] if @error || @column_error
+
+      preload_related(issues, columns)
+      @sampled = @total > SAMPLE_LIMIT
+      columns.map {|column| section_for(column, issues)}
     end
 
-    def dimension(key, column, model, order, options = {})
-      raw = grouped("#{Issue.table_name}.#{column}")
-      return nil if raw.blank?
-      return nil if options[:require_value] && raw.keys.compact.empty?
-
-      rows = named_rows(raw, model)
-      pack(key, rows, order, nil)
+    def sample_issues
+      scope = relation.reorder(nil).order("#{Issue.table_name}.updated_on DESC")
+      scope = scope.limit(SAMPLE_LIMIT) if @total > SAMPLE_LIMIT
+      scope.preload(
+        :status, :priority, :tracker, :assigned_to, :author,
+        :category, :fixed_version, :project, {:custom_values => :custom_field}
+      ).to_a
+    rescue StandardError => e
+      log_error(e)
+      @column_error = :redmine_dashboard_columns_failed
+      []
     end
 
-    def people(key, raw, model)
-      return nil if raw.blank?
+    def preload_related(issues, columns)
+      return if issues.empty?
+      return unless columns.any? {|column| column.class.name.to_s.include?('RelatedColumn')}
 
-      rows = named_rows(raw, model)
-      pack(key, rows, :count, 40)
+      picker = 'RedmineIliskiliTask::Picker'.safe_constantize
+      picker.preload(issues) if picker && picker.respond_to?(:preload)
+    rescue StandardError => e
+      Rails.logger.error("[Dashboard] #{e.class}: #{e.message}") if defined?(Rails)
     end
 
-    def projects
-      raw = grouped("#{Issue.table_name}.project_id")
-      return nil if raw.keys.compact.size < 2
-
-      pack(:project, named_rows(raw, Project), :count, 40)
-    end
-
-    def named_rows(raw, model)
-      ids = raw.keys.compact.map(&:to_i)
-      records = model.where(:id => ids).index_by(&:id)
-      raw.map do |id, count|
-        record = id.nil? ? nil : records[id.to_i]
+    def section_for(column, issues)
+      counts = Hash.new(0)
+      records = {}
+      issues.each do |issue|
+        label, record = present(column, issue)
+        counts[label] += 1
+        records[label] = record if record && records[label].nil?
+      end
+      rows = counts.map do |label, count|
         {
-          :label => record ? record.name : (id.nil? ? nil : "##{id}"),
-          :count => count.to_i,
-          :record => record,
-          :blank => id.nil?,
-          :position => record.respond_to?(:position) ? record.position.to_i : 9999
+          :label => label,
+          :count => count,
+          :blank => label.nil?,
+          :record => records[label]
         }
       end
+      pack(column, rows)
     end
 
-    def pack(key, rows, order, cap)
-      rows = if order == :position
-               rows.sort_by {|row| [row[:position], row[:label].to_s]}
-             else
-               rows.sort_by {|row| [-row[:count], row[:label].to_s]}
-             end
-      if cap && rows.size > cap
-        rest = rows.drop(cap)
-        rows = rows.first(cap)
-        rows << {:label => nil, :count => rest.sum {|row| row[:count]}, :record => nil, :blank => false, :more => rest.size}
+    def present(column, issue)
+      raw = column.value(issue)
+      [text_of(column, raw), avatar_for(raw)]
+    rescue StandardError
+      [nil, nil]
+    end
+
+    def text_of(column, raw)
+      return "#{raw.to_i}%" if column.name.to_s == 'done_ratio' && raw.is_a?(Numeric)
+
+      case raw
+      when nil, ''
+        nil
+      when Array
+        parts = raw.map {|item| text_of(column, item)}.reject(&:blank?)
+        parts.empty? ? nil : clip(parts.join(', '))
+      when true
+        l(:general_text_Yes)
+      when false
+        l(:general_text_No)
+      when Date
+        format_date(raw)
+      when Time, ActiveSupport::TimeWithZone
+        format_date(raw.to_date)
+      when Numeric
+        raw.to_s
+      else
+        raw.respond_to?(:name) ? clip(raw.name) : clip(raw)
       end
-      max = rows.map {|row| row[:count]}.max.to_i
-      {:key => key, :rows => rows, :max => max}
+    end
+
+    def avatar_for(raw)
+      return raw if raw.is_a?(User)
+      return nil unless raw.is_a?(Array)
+
+      users = raw.select {|item| item.is_a?(User)}
+      users.first if users.size == 1
+    end
+
+    def clip(text)
+      value = text.to_s.gsub(/\s+/, ' ').strip
+      return nil if value.blank?
+      return value if value.length <= 80
+
+      "#{value[0, 80]}…"
+    end
+
+    def pack(column, rows)
+      rows = rows.sort_by {|row| [-row[:count], row[:label].to_s]}
+      if rows.size > ROW_LIMIT
+        rest = rows.drop(ROW_LIMIT)
+        rows = rows.first(ROW_LIMIT)
+        rows << {
+          :label => nil,
+          :count => rest.sum {|row| row[:count]},
+          :record => nil,
+          :blank => false,
+          :more => rest.size
+        }
+      end
+      {
+        :title => column_title(column),
+        :tone => column.name.to_s.each_byte.sum % 7,
+        :blank_label => column.name.to_s == 'assigned_to' ? :redmine_dashboard_unassigned : :redmine_dashboard_empty_value,
+        :rows => rows,
+        :max => rows.map {|row| row[:count]}.max.to_i
+      }
+    end
+
+    def column_title(column)
+      column.caption.to_s
+    rescue StandardError
+      column.name.to_s
     end
 
     def remember(error)
+      log_error(error)
+      @error = :redmine_dashboard_query_failed
+    end
+
+    def log_error(error)
       message = error.message.to_s.encode('UTF-8', :invalid => :replace, :undef => :replace)
       message = message.byteslice(0, 2000).to_s
       Rails.logger.error("[Dashboard] #{error.class}: #{message}") if defined?(Rails)
     rescue StandardError
       nil
-    ensure
-      @error = :redmine_dashboard_query_failed
     end
   end
 end

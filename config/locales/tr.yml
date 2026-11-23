@@ -1,6 +1,6 @@
 tr:
   redmine_dashboard_menu: Pano
-  redmine_dashboard_intro: "Kayıtlı bir sorgu seçin. Öncelik, atanan ve diğer sayılar sorgunun güncel sonucundan hesaplanır."
+  redmine_dashboard_intro: "Kayıtlı bir sorgu seçin. Sorgudaki sütunlardan istediklerinizin oransal dağılımını görün."
   redmine_dashboard_query: Sorgu
   redmine_dashboard_choose: Sorgu seçin
   redmine_dashboard_show: Göster
@@ -24,3 +24,9 @@ tr:
   redmine_dashboard_by_version: Sürüm
   redmine_dashboard_by_author: Yazar
   redmine_dashboard_by_project: Proje
+  redmine_dashboard_columns: Sütunlar
+  redmine_dashboard_columns_help: "Kritik seviye, durum veya ilişkili iş durumu gibi sorguda bulunan sütunları seçin. En fazla 10 sütun hesaplanır."
+  redmine_dashboard_no_columns: Dağılım için en az bir sütun seçin.
+  redmine_dashboard_empty_value: Boş
+  redmine_dashboard_columns_failed: Sütun dağılımı hesaplanamadı.
+  redmine_dashboard_sampled: "Oranlar son güncellenen %{number} işe göredir."

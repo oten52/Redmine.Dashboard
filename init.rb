@@ -12,8 +12,8 @@ Redmine::Plugin.register :redmine_dashboard do
   name 'Pano'
   author 'Niltek Arge'
   author_url 'https://github.com/oten52'
-  description 'Kayıtlı bir sorgunun güncel sonucundan öncelik, atanan ve diğer dağılımları gösterir.'
-  version '0.1.0'
+  description 'Kayıtlı bir sorgunun sütunlarına göre oransal dağılım gösterir.'
+  version '0.2.0'
   url 'https://github.com/oten52/Redmine.Dashboard'
   requires_redmine version_or_higher: '4.2'
 

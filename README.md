@@ -6,14 +6,14 @@ Builds a live statistical dashboard from a saved issue query.
 
 ## What's new
 
-* 0.1.0: First release. See [CHANGELOG](CHANGELOG.md).
+* 0.2.0: Proportional breakdown for any column on the saved query. See [CHANGELOG](CHANGELOG.md).
 
 ## Features
 
 * Choose one of your saved issue queries. The counts follow that query's filters and update as the issues change.
 * Summary cards show the total, open, closed and unassigned counts.
-* Panels show the distribution by priority, assignee, status, tracker, version, author and, for cross-project queries, project.
-* Each row has a bar, the count and its share of the total. Assignee rows include the user avatar.
+* Choose the columns that belong to the query. Custom fields such as criticality and related-issue columns are included when they are on the query.
+* Each selected column shows its values, the count and the share of the result.
 * The same page is available from the top menu and from a project tab. Inside a project, a global query is limited to that project.
 
 ## Required Redmine version
